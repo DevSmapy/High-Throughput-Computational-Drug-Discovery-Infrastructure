@@ -87,7 +87,8 @@ The platform was structured as a scalable data processing pipeline that integrat
 
 The architecture cleanly separated data ingestion, molecular search, distributed computation, and result aggregation into distinct stages, enabling the efficient handling of massive datasets while maintaining data quality and reproducibility.
 
-![[ChatGPT Image 2026년 7월 21일 오후 06_37_04.png]]
+<img width="1774" height="887" alt="ChatGPT Image 2026년 7월 21일 오후 06_37_04" src="https://github.com/user-attachments/assets/b04721a4-a996-4747-8933-82cd267ec159" />
+
 
 > (Architecture Diagram)
 
