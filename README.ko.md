@@ -1,6 +1,6 @@
 # 대규모 화합물 Backbone 데이터 인프라 구축
 
-**Language:** [English](./README.md) | [한국어](./README.ko.md) | 日本語 (planned)
+**Language:** [English](./README.md) | [한국어](./README.ko.md) | [日本語](./README.ja.md)
 
 ## 프로젝트 한눈에 보기
 

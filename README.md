@@ -1,6 +1,6 @@
 # High-Throughput Molecular Backbone Data Infrastructure
 
-**Language:** [English](./README.md) | [한국어](./README.ko.md) | 日本語 (planned)
+**Language:** [English](./README.md) | [한국어](./README.ko.md) | [日本語](./README.ja.md)
 
 ## 0. At a Glance
 
