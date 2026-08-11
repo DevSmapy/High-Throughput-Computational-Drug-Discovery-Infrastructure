@@ -6,15 +6,17 @@
 
 > **1億件を超えるZINC化合物データに既存のBackbone抽出機能を適用し、100台以上のサーバーでのバッチ実行、失敗復旧、結果整備、SQLite DB構築を担当したデータエンジニアリングプロジェクトです。**
 
-| 項目 | 内容 |
-|---|---|
-| 担当役割 | Data Engineer |
-| 領域 | 計算創薬（Computational Drug Discovery） |
-| データ規模 | ZINC化合物 1億件以上 |
-| 実行規模 | 計算サーバー 100台以上 |
-| 主な貢献 | Backbone DB構築と大規模バッチ運用 |
-| 主要技術 | Python · Shell · Linux · tmux · SQLite |
+
+| 項目                   | 内容                                                                |
+| -------------------- | ----------------------------------------------------------------- |
+| 担当役割                 | Data Engineer                                                     |
+| 領域                   | 計算創薬（Computational Drug Discovery）                                |
+| データ規模                | ZINC化合物 1億件以上                                                     |
+| 実行規模                 | 計算サーバー 100台以上                                                     |
+| 主な貢献                 | Backbone DB構築と大規模バッチ運用                                            |
+| 主要技術                 | Python · Shell · Linux · tmux · SQLite                            |
 | Engineering Keywords | Batch Processing · Recovery · Storage Optimization · Data Quality |
+
 
 ## 1. 背景
 
@@ -26,6 +28,8 @@
 
 ## 2. 担当範囲
 
+
+
 ### 実施したこと
 
 - 入力データを一定単位に分割し、100台以上のサーバーへ配布
@@ -36,6 +40,8 @@
 - サーバー別CSVの整備とSQLiteベースのCompound DB / Backbone lookup DB構築
 - 処理量、失敗、再割当、完了予定時刻をExcelで管理・報告
 - ローカルディスクで圧縮しNASへ保管するストレージ運用の改善
+
+
 
 ### 直接開発の対象外だったこと
 
@@ -63,7 +69,13 @@ flowchart LR
     J --> K
 ```
 
+
+
+
+
 ## 4. 主な課題と対応
+
+
 
 ### 4.1 多数サーバーへの一貫した作業配布
 
@@ -92,6 +104,8 @@ flowchart LR
 - **Compound DB:** 化合物1件につき1行。ZINC IDを基準にSMILES、Backbone、ring count、ZINC提供の化学特性を管理
 - **Backbone lookup DB:** Backboneを基準に候補を検索するための別lookupレイヤー
 
+
+
 ## 5. 結果検証と運用管理
 
 大規模処理の検証では、複雑な監視システムよりも現場で信頼できる確認手順を明確にすることを重視しました。
@@ -111,25 +125,25 @@ flowchart LR
 - NAS I/Oを考慮したローカル圧縮・順次archive転送方式を定着
 - 後続の分子検索に利用できるZINC ID基準Compound DBとBackbone lookup DBを構築
 
+
+
 ## 7. 使用技術
 
-| 分野 | 技術 |
-|---|---|
-| 自動化 | Python, Shell scripting |
-| データ処理 | CSV整備、重複除去、型正規化 |
-| データベース | SQLite |
-| サーバー運用 | Linux, tmux, `scp`, `cp` |
-| ストレージ | `tar`, bzip2, `pbzip2`, NAS archive workflow |
-| 運用管理 | Excel |
+
+| 分野     | 技術                                           |
+| ------ | -------------------------------------------- |
+| 自動化    | Python, Shell scripting                      |
+| データ処理  | CSV整備、重複除去、型正規化                              |
+| データベース | SQLite                                       |
+| サーバー運用 | Linux, tmux, `scp`, `cp`                     |
+| ストレージ  | `tar`, bzip2, `pbzip2`, NAS archive workflow |
+| 運用管理   | Excel                                        |
+
+
+
 
 ## 8. この経験から得たこと
 
 大規模な科学計算環境では、アルゴリズムだけでシステムは完成しません。入力の分割、失敗の収集、結果の検証、共有ストレージへの負荷まで設計されて初めて、作業を継続して実行できます。
 
 この経験を通じて、データプラットフォームの価値は新しいアルゴリズムを作ることだけではなく、既存ツールを**実行可能・可観測・復旧可能・運用可能なシステム**にすることにもあると学びました。
-
----
-
-### 根拠範囲
-
-本書は2020～2021年の研究ノートと技術復元記録に基づいて作成しました。Backbone DB、`1D Scan Version3`、SMILES・ring・property・schema作業、CSV/DBフローおよび1D/2D scanの文脈は研究ノートで確認しています。正確な最大処理件数と最大サーバー数は断定せず、保守的に**1億件以上**、**100台以上**と記載しています。

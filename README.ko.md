@@ -6,15 +6,17 @@
 
 > **1억 건 이상 ZINC 화합물 데이터에 기존 Backbone 추출기를 적용하고, 100대 이상 서버의 배치 실행·실패 복구·결과 정제·SQLite DB 구축을 담당한 데이터 엔지니어링 프로젝트입니다.**
 
-| 항목 | 내용 |
-|---|---|
-| 담당 역할 | Data Engineer |
-| 도메인 | 계산 신약개발(Computational Drug Discovery) |
-| 데이터 규모 | ZINC 화합물 1억 건 이상 |
-| 실행 규모 | 계산 서버 100대 이상 |
-| 핵심 기여 | Backbone DB 구축 및 대규모 배치 운영 |
-| 주요 기술 | Python · Shell · Linux · tmux · SQLite |
+
+| 항목        | 내용                                                                |
+| --------- | ----------------------------------------------------------------- |
+| 담당 역할     | Data Engineer                                                     |
+| 도메인       | 계산 신약개발(Computational Drug Discovery)                             |
+| 데이터 규모    | ZINC 화합물 1억 건 이상                                                  |
+| 실행 규모     | 계산 서버 100대 이상                                                     |
+| 핵심 기여     | Backbone DB 구축 및 대규모 배치 운영                                        |
+| 주요 기술     | Python · Shell · Linux · tmux · SQLite                            |
 | 엔지니어링 키워드 | Batch Processing · Recovery · Storage Optimization · Data Quality |
+
 
 ## 1. 업무 배경
 
@@ -26,6 +28,8 @@
 
 ## 2. 담당 범위
 
+
+
 ### 직접 수행한 일
 
 - 입력 데이터를 일정 단위로 분할하고 100대 이상 서버에 배포
@@ -36,6 +40,8 @@
 - 서버별 CSV 결과 정제 및 SQLite 기반 Compound DB / Backbone lookup DB 구축
 - 서버별 처리 현황·실패·재할당·예상 완료 시각을 Excel로 관리·보고
 - 로컬 서버 디스크에서 압축 후 NAS에 보관하는 스토리지 운영 방식 개선
+
+
 
 ### 직접 개발하지 않은 영역
 
@@ -63,7 +69,13 @@ flowchart LR
     J --> K
 ```
 
+
+
+
+
 ## 4. 주요 해결 과제와 접근 방식
+
+
 
 ### 4.1 많은 서버에 같은 작업을 일관되게 배포
 
@@ -92,6 +104,8 @@ flowchart LR
 - **Compound DB:** 화합물 한 건당 한 행. ZINC ID를 기준으로 SMILES, Backbone, ring count, ZINC 제공 화학 속성을 관리
 - **Backbone lookup DB:** Backbone 기준으로 후보를 찾기 위한 별도 lookup 계층
 
+
+
 ## 5. 결과 검증과 운영 관리
 
 대량 작업의 검증은 복잡한 모니터링 시스템보다, 현장에서 신뢰할 수 있는 확인 절차를 명확히 하는 방식으로 진행했습니다.
@@ -111,25 +125,25 @@ flowchart LR
 - NAS I/O를 고려한 로컬 압축·순차 archive 전송 방식 정착
 - 후속 분자 검색에 활용 가능한 ZINC ID 기반 Compound DB와 Backbone lookup DB 구축
 
+
+
 ## 7. 사용 기술
 
-| 분야 | 기술 |
-|---|---|
-| 자동화 | Python, Shell scripting |
-| 데이터 처리 | CSV 정제, 중복 제거, 타입 정규화 |
-| 데이터베이스 | SQLite |
-| 서버 운영 | Linux, tmux, `scp`, `cp` |
-| 스토리지 | `tar`, bzip2, `pbzip2`, NAS archive workflow |
-| 운영 관리 | Excel |
+
+| 분야     | 기술                                           |
+| ------ | -------------------------------------------- |
+| 자동화    | Python, Shell scripting                      |
+| 데이터 처리 | CSV 정제, 중복 제거, 타입 정규화                        |
+| 데이터베이스 | SQLite                                       |
+| 서버 운영  | Linux, tmux, `scp`, `cp`                     |
+| 스토리지   | `tar`, bzip2, `pbzip2`, NAS archive workflow |
+| 운영 관리  | Excel                                        |
+
+
+
 
 ## 8. 이 경험을 통해 배운 점
 
 대규모 과학 계산 환경에서는 알고리즘만으로 시스템이 완성되지 않습니다. 입력을 어떻게 나누고, 실패를 어떻게 모으고, 결과를 어떻게 확인하며, 공유 스토리지에 어떤 부담을 주지 않을지까지 설계되어야 작업이 계속 진행될 수 있습니다.
 
 이 경험을 통해 저는 데이터 플랫폼의 가치는 새로운 알고리즘을 만드는 데만 있지 않고, 기존 도구를 **실행 가능하고, 관찰 가능하며, 복구 가능하고, 운영 가능한 시스템**으로 만드는 데에도 있다는 점을 배웠습니다.
-
----
-
-### 근거 범위
-
-본 문서는 2020–2021년 연구노트와 기술 복원 기록을 기반으로 작성했습니다. Backbone DB, `1D Scan Version3`, SMILES·ring·property·schema 작업, CSV/DB 흐름 및 1D/2D scan 문맥은 연구노트에서 확인했습니다. 정확한 최대 처리 건수와 최대 서버 수는 확정하지 않고, 보수적으로 **1억 건 이상**, **100대 이상**으로 표기했습니다.
