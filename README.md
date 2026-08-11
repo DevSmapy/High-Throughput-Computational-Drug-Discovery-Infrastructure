@@ -20,7 +20,7 @@
 
 This project documents the data infrastructure built to make an existing molecular **Backbone extraction** capability usable across a large ZINC chemical dataset.
 
-My contribution was not the molecular search algorithm or the Backbone extraction algorithm itself. I owned the operational and data-engineering work around it: partitioning inputs, coordinating runs across 100+ servers, recovering failed partitions, validating outputs, and building SQLite databases for downstream molecular search.
+My contribution was not the molecular search algorithm or the Backbone extraction algorithm itself. I owned the operational and data-engineering work around it: partitioning inputs, coordinating runs across 100+ servers, recovering failed partitions, checking batch completion, and building SQLite databases for downstream molecular search.
 
 ## 2. The Engineering Problem
 
@@ -43,6 +43,7 @@ flowchart LR
     C --> D[Existing Backbone extractor<br/>100+ compute servers]
     D --> E[Output validation]
     E --> F[Failure-only recovery]
+    F --> B
     E --> G[Per-server CSV outputs]
     G --> H[Python cleaning and type normalization]
     H --> I[Compound database<br/>ZINC ID keyed]
@@ -57,7 +58,7 @@ flowchart LR
 
 ### Data model
 
-- **Compound database:** one row per compound, keyed by ZINC ID.
+- **Compound database:** ZINC ID–keyed compound records for downstream compound-level access.
 - **Stored data:** SMILES, Backbone representation, ring count, and available ZINC-provided chemical properties.
 - **Lookup database:** a separate Backbone-oriented SQLite lookup layer for downstream retrieval.
 
@@ -87,9 +88,9 @@ The inherited recovery approach restarted all work assigned to a failed server. 
 
 This reduced avoidable reprocessing while retaining a workflow that operators could inspect and control directly.
 
-### Output validation and reporting
+### Operational completion checks and reporting
 
-- Verified completion messages and checked output file counts and sizes.
+- Checked completion messages and output file counts/sizes as operational signals of batch progress (not record-level input-to-output completeness, chemical validity, or identifier uniqueness).
 - Tracked server-level input volume, output volume, elapsed time, failures, reassignment, and expected completion time in Excel.
 - Reported both the current batch result and the next execution plan to the team lead.
 
@@ -108,7 +109,7 @@ Completed archives were transferred sequentially to manage shared NAS I/O. I als
 ### CSV-to-SQLite data pipeline
 
 - Cleaned server-generated CSV outputs with Python.
-- Applied exact-row deduplication and column/type normalization.
+- Applied exact-row deduplication (identical rows only) and column/type normalization; same ZINC ID with differing property values was not collapsed by a separate conflict rule.
 - Loaded the cleaned records into SQLite databases for compound-level access and Backbone-oriented lookup.
 
 
@@ -131,7 +132,7 @@ To keep this portfolio accurate, the following were outside my direct ownership:
 - cluster scheduler or automatic retry-system implementation; and
 - NAS or network-infrastructure design.
 
-The research records confirm Backbone DB construction and the broader 1D/2D scan, scaffold, R-group, and ranking context. This portfolio focuses specifically on my contribution to the large-scale data and operations layer.
+This portfolio focuses specifically on my contribution to the large-scale data and operations layer.
 
 ## 7. Tech Stack
 
