@@ -1,225 +1,154 @@
-# High-Throughput Data Platform for Computational Drug Discovery
+# High-Throughput Molecular Backbone Data Infrastructure
 
-> Designed and optimized a large-scale molecular data platform that processed over **100 million molecular records**, automated **HPC-based scientific workflows**, and improved the scalability and reliability of virtual screening pipelines.
+**Language:** [English](./README.md) | [한국어](./README.ko.md) | [日本語](./README.ja.md)
 
-**Company**
-Syntekabio (2019.03 – 2022.02)
+## 0. At a Glance
 
-**Role**
-Data Engineer
 
-**Research Domain**
-Computational Drug Discovery
+| Category             | Summary                                                         |
+| -------------------- | --------------------------------------------------------------- |
+| Role                 | Data Engineer                                                   |
+| Domain               | Computational Drug Discovery                                    |
+| Dataset scale        | 100M+ ZINC molecular records                                    |
+| Compute scale        | 100+ compute servers                                            |
+| Core contribution    | Large-scale Backbone database construction and batch operations |
+| Primary technologies | Python · Shell · Linux · tmux · SQLite                          |
+| Engineering themes   | Batch reliability · Storage-aware operations · Data quality     |
 
-**Focus Areas**
-Large-scale Data Processing · Pipeline Automation · HPC · Database Optimization · Scientific Computing
 
-|                    |                                                     |
-| ------------------ | --------------------------------------------------- |
-| **Category**       | **Summary**                                         |
-| Role               | Data Engineer                                       |
-| Domain             | Computational Drug Discovery                        |
-| Scale              | 100M+ Molecular Records                             |
-| Infrastructure     | HPC Cluster (200+ Nodes)                            |
-| Core Contributions | Data Pipeline · Search Engine · Workflow Automation |
-| Key Technologies   | Python · PostgreSQL · Linux · RDKit                 |
+## 1. Project Overview
 
-## Executive Summary
+This project documents the data infrastructure built to make an existing molecular **Backbone extraction** capability usable across a large ZINC chemical dataset.
 
-As a Data Engineer on an AI-driven drug discovery team, I built and optimized data-intensive research infrastructure for large-scale virtual screening.
+My contribution was not the molecular search algorithm or the Backbone extraction algorithm itself. I owned the operational and data-engineering work around it: partitioning inputs, coordinating runs across 100+ servers, recovering failed partitions, checking batch completion, and building SQLite databases for downstream molecular search.
 
-Rather than focusing solely on computational chemistry, my work centered on solving core engineering problems involving massive datasets, distributed computing, and workflow automation.
+## 2. The Engineering Problem
 
-Key contributions include:
+The available ZINC SMILES dataset contained more than 100 million molecular records. Processing this volume with the existing extractor required practical answers to several operational problems:
 
-- Designed scalable pipelines capable of processing over **100 million molecular records**
-- Developed a custom molecular search engine (IDSCAN V3) to improve search reliability and data integrity
-- Automated molecular dynamics (MD) workflows across **200+ HPC nodes**
-- Optimized multiprocessing pipelines to significantly reduce large-scale search execution time
-- Built robust validation and data quality processes for molecular databases
+- distribute work consistently across many compute servers;
+- verify completion without a cluster scheduler;
+- recover only failed work instead of rerunning successful partitions;
+- preserve large volumes of required intermediate artifacts without overloading shared NAS storage; and
+- consolidate server-level CSV outputs into a queryable molecular database.
 
-## Business Context
 
-Virtual screening is a foundational process in computational drug discovery, requiring researchers to search and analyze extremely large molecular databases.
 
-At Syntekabio, the platform managed over **100 million molecular records** gathered from public chemical repositories and internal datasets.
+## 3. System Overview
 
-As data volume continued to grow, the legacy workflow encountered several engineering bottlenecks:
+```mermaid
+flowchart LR
+    A[ZINC molecular data] --> B[Input slicing]
+    B --> C[Scripted distribution]
+    C --> D[Existing Backbone extractor<br/>100+ compute servers]
+    D --> E[Output validation]
+    E --> F[Failure-only recovery]
+    F --> B
+    E --> G[Per-server CSV outputs]
+    G --> H[Python cleaning and type normalization]
+    H --> I[Compound database<br/>ZINC ID keyed]
+    H --> J[Backbone lookup database]
+    I --> K[Downstream molecular search]
+    J --> K
+```
 
-- Memory constraints during large-scale data processing
-- Suboptimal search performance for scaffold-based molecular retrieval
-- Data consistency issues driven by duplicated and structurally similar compounds
-- Escalating computational costs for HPC-based molecular simulations
 
-These limitations restricted research throughput and hindered the efficient execution of large-scale computational experiments.
 
-The objective of this project was to rearchitect the data processing pipeline and automate the computational workflow while preserving data integrity and scaling seamlessly.
 
----
-## Engineering Challenges
 
-The platform needed to process massive molecular datasets while maintaining search accuracy and computational efficiency.
+### Data model
 
-As the system scaled, several distinct engineering challenges emerged:
+- **Compound database:** ZINC ID–keyed compound records for downstream compound-level access.
+- **Stored data:** SMILES, Backbone representation, ring count, and available ZINC-provided chemical properties.
+- **Lookup database:** a separate Backbone-oriented SQLite lookup layer for downstream retrieval.
 
-### 1. Large-Scale Data Processing
 
-- Over **100 million molecular records** routinely exceeded available memory capacity.
-- Processing the entire dataset sequentially led to prohibitive execution times.
-- The pipeline required scalable, distributed processing without sacrificing reproducibility.
 
-### 2. Search Reliability and Data Integrity
+## 4. Engineering Contributions
 
-- Molecular databases contained duplicated structures, inconsistent identifiers, and structurally similar compounds.
-- Traditional string-based comparisons proved insufficient for verifying chemical identity.
-- Reliable search results demanded structural validation that went beyond standard database indexing.
 
-### 3. HPC Workflow Management
 
-- Molecular docking and MD simulations generated thousands of independent computational jobs.
-- Efficient scheduling and orchestration were essential across **200+ HPC nodes**.
-- Manual execution introduced unnecessary operational overhead and a higher rate of job failures.
+### Multi-node batch execution
 
----
-## Architecture
+- Split the source dataset into fixed work partitions.
+- Used Python and shell scripts to distribute inputs from a server list with `scp`.
+- Used `tmux synchronize-panes` to prepare identical working locations and commands across servers.
+- Ran the existing Backbone extraction process across 100+ compute servers and consolidated the outputs.
 
-The platform was structured as a scalable data processing pipeline that integrated molecular databases, parallel search engines, HPC infrastructure, and automated post-processing workflows.
 
-The architecture cleanly separated data ingestion, molecular search, distributed computation, and result aggregation into distinct stages, enabling the efficient handling of massive datasets while maintaining data quality and reproducibility.
 
-<img width="1774" height="887" alt="ChatGPT Image 2026년 7월 21일 오후 06_37_04" src="https://github.com/user-attachments/assets/b04721a4-a996-4747-8933-82cd267ec159" />
+### Operator-centered recovery loop
 
+The inherited recovery approach restarted all work assigned to a failed server. I changed the operational loop to:
 
-> (Architecture Diagram)
+1. collect failed inputs after a batch completed;
+2. repartition only those failed inputs;
+3. redistribute them to available servers; and
+4. rerun the recovery batch with a revised completion estimate.
 
-### Architecture Highlights
+This reduced avoidable reprocessing while retaining a workflow that operators could inspect and control directly.
 
-- Processed over **100 million molecular records** reliably
-- Parallelized large-scale searches using Python multiprocessing
-- Integrated PostgreSQL for structured molecular storage and querying
-- Automated HPC-based molecular simulation workflows end-to-end
-- Standardized post-processing and validation pipelines
+### Operational completion checks and reporting
 
----
-## Engineering Decisions
+- Checked completion messages and output file counts/sizes as operational signals of batch progress (not record-level input-to-output completeness, chemical validity, or identifier uniqueness).
+- Tracked server-level input volume, output volume, elapsed time, failures, reassignment, and expected completion time in Excel.
+- Reported both the current batch result and the next execution plan to the team lead.
 
-### Chunk-based Processing
 
-Instead of loading the entire molecular database into memory, the pipeline partitioned datasets into manageable chunks of approximately **1,000 records**.
 
-This strategy minimized memory footprints while enabling efficient multiprocessing across independent workloads.
+### Storage-aware artifact handling
 
-### Multiprocessing for CPU-Intensive Searches
+The extraction workflow produced many required small intermediate files. To avoid heavy I/O on shared NAS storage:
 
-Large-scale scaffold searching proved to be CPU-bound rather than I/O-bound.
+- compressed completed artifacts on each compute server's local disk using `tar.bz2`;
+- introduced multi-threaded compression with `pbzip2`; and
+- treated NAS as an archive destination rather than a compute workspace.
 
-Python multiprocessing was implemented to maximize CPU utilization and dramatically improve throughput for structural comparisons.
+Completed archives were transferred sequentially to manage shared NAS I/O. I also compared transfer approaches in the operating environment and retained `scp` for input distribution and `cp` for archive transfer to mounted storage.
 
-### Custom Molecular Search Engine
+### CSV-to-SQLite data pipeline
 
-A custom search engine was developed to enhance scaffold retrieval accuracy and eliminate missing search results.
+- Cleaned server-generated CSV outputs with Python.
+- Applied exact-row deduplication (identical rows only) and column/type normalization; same ZINC ID with differing property values was not collapsed by a separate conflict rule.
+- Loaded the cleaned records into SQLite databases for compound-level access and Backbone-oriented lookup.
 
-Structural ranking and validation logic were embedded directly into the engine to ensure higher reliability than conventional database queries.
 
-### Multi-Stage Data Validation
 
-Chemical structures were validated against multiple criteria, including structural similarity and molecular property constraints.
+## 5. Technical Impact
 
-This validation pipeline successfully minimized duplicate records and improved overall database consistency prior to downstream analysis.
+- Established an operational path to process and organize **100M+ molecular records** with existing scientific software.
+- Made large batch execution more recoverable by isolating and rerunning failed partitions only.
+- Improved shared-storage safety by moving compression work to compute-server disks and using NAS for archival storage.
+- Delivered structured molecular data that could support later 1D molecular search and screening workflows.
 
-### Automated HPC Workflows
 
-Computational tasks were automated via robust Python-based workflow scripts.
 
-Simulation execution, post-processing, and result aggregation were made fully reproducible without manual intervention, facilitating large-scale runs across HPC clusters.
+## 6. Scope Boundaries
 
----
-## Technical Impact
+To keep this portfolio accurate, the following were outside my direct ownership:
 
-The redesigned platform substantially improved the scalability, maintainability, and reliability of large-scale computational workflows.
+- development of the core **1D Scan Version3** molecular search algorithm;
+- development of the molecular Backbone extraction algorithm;
+- cluster scheduler or automatic retry-system implementation; and
+- NAS or network-infrastructure design.
 
-### Performance
+This portfolio focuses specifically on my contribution to the large-scale data and operations layer.
 
-- Handled datasets comprising over **100 million molecular records**
-- Accelerated execution times for large-scale search workflows via multiprocessing
-- Enabled seamless, large-scale execution of HPC-based molecular simulations
+## 7. Tech Stack
 
-### Reliability
 
-- Enhanced molecular search consistency through strict structural validation
-- Filtered out duplicate and inconsistent molecular records prior to downstream processing
-- Standardized computational workflows to guarantee scientific reproducibility
+| Category                 | Technologies                                  |
+| ------------------------ | --------------------------------------------- |
+| Programming & automation | Python, Shell scripting                       |
+| Data processing          | CSV, data cleaning, type normalization        |
+| Database                 | SQLite                                        |
+| Compute operations       | Linux, tmux, `scp`, `cp`                      |
+| Storage operations       | `tar`, bzip2, `pbzip2`, NAS archival workflow |
+| Operational reporting    | Excel                                         |
 
-### Engineering
 
-- Increased overall pipeline modularity to accommodate future feature expansion
-- Minimized manual operational effort through end-to-end workflow automation
-- Established reusable components for large-scale scientific data processing
 
----
-## Key Learnings
 
-This project reinforced several engineering principles that continue to influence how I design data-intensive systems.
+## 8. Key Takeaway
 
-### Engineering is About Trade-Offs
-
-Optimizing performance is rarely just about choosing the fastest algorithm. Understanding system bottlenecks, balancing memory consumption, and designing for modular scalability proved to be far more critical.
-
-### Data Quality is System Design
-
-Reliable downstream analysis relies entirely on trustworthy upstream data. Validation and consistency checks must be treated as core engineering responsibilities rather than optional preprocessing steps.
-
-### Automation Drives Reproducibility
-
-Scientific workflows should be fully executable without manual intervention. Automation not only cuts operational overhead but also ensures consistency across repeated computational experiments.
-
-### Scalability Must Be Engineered Early
-
-As datasets expand, architectures built for thousands of records quickly bottleneck at millions. Designing with scalability in mind from day one prevents severe technical debt later on.
-
----
-## Tech Stack
-
-### Data Engineering
-
-- Python
-- PostgreSQL
-- SQLite
-- Multiprocessing
-
-### Infrastructure
-
-- Linux
-- HPC Cluster
-- Bash
-
-### Scientific Computing
-
-- RDKit
-- Open Babel
-- AMBER
-- GROMACS
-
-### Data Processing
-
-- Pandas
-- NumPy
-
-### Development
-
-- Git
-- Jupyter Notebook
-- VS Code
-
----
-## Conclusion
-
-This project demonstrates my experience to design and implement scalable data platforms for advanced computational research. Although the application domain was AI-driven drug discovery, the engineering challenges—large-scale data processing, workflow automation, HPC utilization, and data quality management—translate directly to modern Data Engineering and Platform Engineering roles.
-
-This experience reinforced my ability to build robust, maintainable, and scalable systems that support data-intensive applications well beyond the life sciences sector.
-
-### Reference
-
-- [LS-align (Bioinformatics)](https://academic.oup.com/bioinformatics/article/34/13/2209/4931393 "null")
-- [Murcko Scaffolds (RDKit Documentation)](https://www.rdkit.org/docs/GettingStartedInPython.html%23murcko-decomposition "null")
-- [Syntekabio Technology](https://www.syntekabio.com/ "null")
+This work shaped how I approach data-platform engineering: useful infrastructure is not only an algorithm or a scheduler. It is also the operational layer that makes large-scale scientific computation executable, observable, recoverable, and safe for the surrounding storage systems.
